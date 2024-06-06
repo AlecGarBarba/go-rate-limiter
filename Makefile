@@ -22,3 +22,6 @@ run-prod:
 
 test-curl:
 	for i in $$(seq 1 $(COUNT)); do curl http://localhost:8080/; done
+
+test-curl-info:
+	for i in $$(seq 1 $(COUNT)); do curl -i http://localhost:8080/; done
