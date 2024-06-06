@@ -8,8 +8,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+type RedisConfig struct {
+	Addr     string
+	Password string
+	DB       int
+}
 type Configuration struct {
 	APIUrl *url.URL
+	Redis  RedisConfig
 }
 
 func LoadConfig() (Configuration, error) {
@@ -40,5 +46,10 @@ func LoadConfig() (Configuration, error) {
 
 	return Configuration{
 		APIUrl: backendURL,
+		Redis: RedisConfig{
+			Addr:     viper.GetString("REDIS_ADDR"),
+			Password: viper.GetString("REDIS_PASSWORD"),
+			DB:       viper.GetInt("REDIS_DB"),
+		},
 	}, nil
 }
