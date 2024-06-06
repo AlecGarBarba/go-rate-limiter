@@ -13,9 +13,14 @@ type RedisConfig struct {
 	Password string
 	DB       int
 }
+
+type RateLimitConfig struct {
+	Limit int
+}
 type Configuration struct {
-	APIUrl *url.URL
-	Redis  RedisConfig
+	APIUrl    *url.URL
+	Redis     RedisConfig
+	RateLimit RateLimitConfig
 }
 
 func LoadConfig() (Configuration, error) {
@@ -44,12 +49,25 @@ func LoadConfig() (Configuration, error) {
 		log.Fatalf("Error parsing API URL: %v", err)
 	}
 
+	redisConfig := viper.Sub("redis")
+	if redisConfig == nil {
+		panic("Missing REDIS config")
+	}
+
+	rateLimitConfig := viper.Sub("rateLimit")
+	if rateLimitConfig == nil {
+		panic("Missing RATE_LIMIT config")
+	}
+
 	return Configuration{
 		APIUrl: backendURL,
 		Redis: RedisConfig{
-			Addr:     viper.GetString("REDIS_ADDR"),
-			Password: viper.GetString("REDIS_PASSWORD"),
-			DB:       viper.GetInt("REDIS_DB"),
+			Addr:     redisConfig.GetString("ADDR"),
+			Password: redisConfig.GetString("PASSWORD"),
+			DB:       redisConfig.GetInt("DB"),
+		},
+		RateLimit: RateLimitConfig{
+			Limit: rateLimitConfig.GetInt("MAXREQUESTS"),
 		},
 	}, nil
 }
