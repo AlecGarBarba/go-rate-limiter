@@ -21,4 +21,4 @@ run-prod:
     API_URL=http://prod.api.com go run main.go
 
 test-curl:
-	for i in {1..10}; do curl -i http://localhost:8080/; done
+	for i in $$(seq 1 $(COUNT)); do curl http://localhost:8080/; done

@@ -30,7 +30,6 @@ func main() {
 	_, err = rdb.Ping().Result()
 	if err != nil {
 		log.Fatalf("Error connecting to Redis: %v", err)
-	
 	}
 
 	limiter := redis_rate.NewLimiter(rdb)
@@ -43,7 +42,7 @@ func main() {
 	n.UseFunc(func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 
 		// TODO: make this configurable via env variables as well.
-		result, err := limiter.Allow("api", redis_rate.PerMinute(5))
+		result, err := limiter.Allow("api", redis_rate.PerSecond(10))
 
 		if !result.Allowed {
 			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
