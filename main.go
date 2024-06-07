@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"strconv"
 
 	"github.com/alecGarBarba/go-rate-limiter/config"
 	"github.com/go-redis/redis/v7"
@@ -15,7 +16,9 @@ import (
 func main() {
 
 	config, err := config.LoadConfig()
+
 	if err != nil {
+
 		log.Fatalf("Error loading config: %v", err)
 	}
 
@@ -25,7 +28,7 @@ func main() {
 		DB:       config.Redis.DB,
 	})
 
-	// ping redis to ensure connection
+	// ping redis to ensure connection is healthy
 
 	_, err = rdb.Ping().Result()
 	if err != nil {
@@ -41,9 +44,16 @@ func main() {
 
 	n.UseFunc(func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 
-		// TODO: make this configurable via env variables as well.
-		result, err := limiter.Allow("api", redis_rate.PerSecond(10))
+		clientKey := r.Header.Get("X-Client-Id")
 
+		if clientKey == "" {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		result, err := limiter.Allow(clientKey, redis_rate.PerSecond(config.RateLimit.Limit))
+
+		setRateLimitHeaders(w, result, &config.RateLimit)
 		if !result.Allowed {
 			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
@@ -51,7 +61,6 @@ func main() {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		// TODO:  we need to add the X-headers to inform client about remaining tries and reset time
 
 		next(w, r)
 	})
@@ -68,4 +77,10 @@ func main() {
 
 	// Start server
 	log.Fatal(http.ListenAndServe(":8080", n))
+}
+
+func setRateLimitHeaders(w http.ResponseWriter, result *redis_rate.Result, rateLimitConfig *config.RateLimitConfig) {
+	w.Header().Set("X-RateLimit-Limit", strconv.Itoa(rateLimitConfig.Limit))
+	w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(result.Remaining))
+	w.Header().Set("X-RateLimit-Reset", result.ResetAfter.String())
 }
