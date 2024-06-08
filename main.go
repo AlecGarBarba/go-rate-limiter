@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"strconv"
 
 	"github.com/alecGarBarba/go-rate-limiter/config"
 	"github.com/alecGarBarba/go-rate-limiter/middleware"
@@ -59,10 +58,4 @@ func main() {
 
 	// Start server
 	log.Fatal(http.ListenAndServe(":8080", n))
-}
-
-func setRateLimitHeaders(w http.ResponseWriter, result *redis_rate.Result, rateLimitConfig *config.RateLimitConfig) {
-	w.Header().Set("X-RateLimit-Limit", strconv.Itoa(rateLimitConfig.Limit))
-	w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(result.Remaining))
-	w.Header().Set("X-RateLimit-Reset", result.ResetAfter.String())
 }
