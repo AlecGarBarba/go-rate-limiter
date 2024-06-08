@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/alecGarBarba/go-rate-limiter/config"
+	"github.com/alecGarBarba/go-rate-limiter/middleware"
 	"github.com/go-redis/redis/v7"
 	"github.com/go-redis/redis_rate/v8"
 	"github.com/urfave/negroni"
@@ -37,33 +38,14 @@ func main() {
 
 	limiter := redis_rate.NewLimiter(rdb)
 
+	middleware := middleware.NewMiddleware(limiter, config)
+
 	// Initialize Middleware
 	n := negroni.Classic()
 
 	// Rate Limiter
 
-	n.UseFunc(func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-
-		clientKey := r.Header.Get("X-Client-Id")
-
-		if clientKey == "" {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-
-		result, err := limiter.Allow(clientKey, redis_rate.PerSecond(config.RateLimit.Limit))
-
-		setRateLimitHeaders(w, result, &config.RateLimit)
-		if !result.Allowed {
-			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
-			return
-		} else if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		next(w, r)
-	})
+	n.UseFunc(middleware.RateLimit)
 
 	fmt.Println("API URL: ", config.APIUrl)
 
