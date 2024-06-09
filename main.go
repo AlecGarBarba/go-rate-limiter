@@ -39,7 +39,8 @@ func main() {
 
 	middleware := middleware.NewMiddleware(limiter, config)
 
-	// Initialize Middleware
+	// Initialize Middleware handler with default configuration:
+	// Panic handler, logger, and static file serving.
 	n := negroni.Classic()
 
 	// Rate Limiter
