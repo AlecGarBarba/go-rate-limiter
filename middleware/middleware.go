@@ -36,7 +36,7 @@ func (m *Middleware) RateLimit(w http.ResponseWriter, r *http.Request, next http
 		return
 	}
 
-	result, err := m.limiter.Allow(clientKey, redis_rate.PerSecond(m.config.RateLimit.Limit))
+	result, err := m.limiter.Allow(clientKey, redis_rate.PerMinute(m.config.RateLimit.Limit))
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
