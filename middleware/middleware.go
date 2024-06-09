@@ -9,12 +9,18 @@ import (
 	"github.com/alecGarBarba/go-rate-limiter/config"
 )
 
+// Adding an additional layer of abstraction so we can swap out the limiter implementation
+// if needed
+type Limiter interface {
+	Allow(key string, limit *redis_rate.Limit) (*redis_rate.Result, error)
+}
+
 type Middleware struct {
-	limiter *redis_rate.Limiter
+	limiter Limiter
 	config  config.Configuration
 }
 
-func NewMiddleware(limiter *redis_rate.Limiter, config config.Configuration) *Middleware {
+func NewMiddleware(limiter Limiter, config config.Configuration) *Middleware {
 	return &Middleware{
 		limiter: limiter,
 		config:  config,
@@ -32,12 +38,16 @@ func (m *Middleware) RateLimit(w http.ResponseWriter, r *http.Request, next http
 
 	result, err := m.limiter.Allow(clientKey, redis_rate.PerSecond(m.config.RateLimit.Limit))
 
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+
+	}
+
 	setRateLimitHeaders(w, result, &m.config.RateLimit)
+
 	if !result.Allowed {
 		http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
-		return
-	} else if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
