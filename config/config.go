@@ -51,12 +51,12 @@ func LoadConfig() (Configuration, error) {
 
 	redisConfig := viper.Sub("redis")
 	if redisConfig == nil {
-		panic("Missing REDIS config")
+		log.Fatalf("Missing REDIS config")
 	}
 
 	rateLimitConfig := viper.Sub("rateLimit")
 	if rateLimitConfig == nil {
-		panic("Missing RATE_LIMIT config")
+		log.Fatalf("Missing RATE_LIMIT config")
 	}
 
 	return Configuration{
